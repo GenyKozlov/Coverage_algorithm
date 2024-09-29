@@ -149,14 +149,18 @@ def collision_avoidance(state, gridmap, params):
 	return state
 
 def define_flight_area(initial_pose):
+	# показать сетку на фигуре
 	plt.grid()
+	# цикл выполняется, пока его не прервать (break)
 	while True:
+		# обработка исключения: нужно ввести целое число (количество вершин)
 		try:
 			num_pts = int( input('Enter number of polygonal vertixes: ') )
 			break
 		except:
 			print('\nPlease, enter an integer number.')
 	while True:
+		# 
 		flight_area_vertices = define_polygon(num_pts)
 		if polygon_contains_point(initial_pose, flight_area_vertices):
 			break
@@ -185,11 +189,15 @@ def main():
 	
 		np.array([[-0.3, -0.4], [0.3, -0.4], [0.3, 0.1], [-0.3, 0.1]]) * 0.5
 	]
-	# initial state = [x(m), y(m), yaw(rad), v(m/s), omega(rad/s)]
+	# начальные параметры = [x(m), y(m), yaw(rad), v(m/s), omega(rad/s)]
 	state = np.array([0, 0.2, np.pi/2, 0.0, 0.0])
+	# срез массива с координатами x, y
 	traj = state[:2]
+	# создание объекта класса
 	params = Params()
+	# создание фигуры с размером (10, 10)
 	plt.figure(figsize=(10,10))
+	# определение полетной зоны
 	flight_area_vertices = define_flight_area(state[:2])
 	# flight_area_vertices = np.array([[-1, -1], [-0.3, -1], [-0.3, -0.4], [0.3, -0.4], [0.3, -1], [1,-1], [1,1], [-1,1]])
 	gridmap = GridMap(flight_area_vertices, state[:2])
