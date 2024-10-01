@@ -165,9 +165,12 @@ def define_flight_area(initial_pose):
 		# Передаются начальное положение БПЛА и координаты вершин полигона
 		if polygon_contains_point(initial_pose, flight_area_vertices):
 			break
+		# Полная очистка фигуры
 		plt.clf()
+		# Включение отображения сетки
 		plt.grid()
 		print('The robot is not inside the flight area. Define again.')
+	# Возвращает границы полигона
 	return flight_area_vertices
 
 class Params:
@@ -201,6 +204,7 @@ def main():
 	# определение полетной зоны
 	flight_area_vertices = define_flight_area(state[:2])
 	# flight_area_vertices = np.array([[-1, -1], [-0.3, -1], [-0.3, -0.4], [0.3, -0.4], [0.3, -1], [1,-1], [1,1], [-1,1]])
+	# Объект класса
 	gridmap = GridMap(flight_area_vertices, state[:2])
 	gridmap.add_obstacles_to_grid_map(obstacles)
 
