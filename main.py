@@ -204,7 +204,7 @@ def main():
 	# определение полетной зоны
 	flight_area_vertices = define_flight_area(state[:2])
 	# flight_area_vertices = np.array([[-1, -1], [-0.3, -1], [-0.3, -0.4], [0.3, -0.4], [0.3, -1], [1,-1], [1,1], [-1,1]])
-	# Объект класса
+	# Объект класса: передаются границы полигона и начальное положение
 	gridmap = GridMap(flight_area_vertices, state[:2])
 	gridmap.add_obstacles_to_grid_map(obstacles)
 
