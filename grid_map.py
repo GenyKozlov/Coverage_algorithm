@@ -15,6 +15,7 @@ from matplotlib.patches import Polygon
 
 
 class GridMap:
+    # Задание значения по умолчанию для начальной точки
     def __init__(self, polygon_vertices, point_inside_polygon=[0,0]):
         self.map_center = np.array([0.0, 0.0])
         self.map_width_m = 5.0
