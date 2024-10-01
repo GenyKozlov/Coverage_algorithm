@@ -5,8 +5,11 @@ from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 
 def polygon_contains_point(point, polygon_vertices):
+	# Строится точка с координатами начального положения
 	point = Point(point[0], point[1])
+	# Конструктор полигона по точкам границы области полета
 	polygon = Polygon(polygon_vertices)
+	# Проверка, если point (начальная точка) лежит в полигоне: True или False
 	return polygon.contains(point)
 
 def define_polygon(num_pts=4):
