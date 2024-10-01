@@ -160,8 +160,9 @@ def define_flight_area(initial_pose):
 		except:
 			print('\nPlease, enter an integer number.')
 	while True:
-		# 
+		# Определение области полета - полигона
 		flight_area_vertices = define_polygon(num_pts)
+		# Передаются начальное положение БПЛА и координаты вершин полигона
 		if polygon_contains_point(initial_pose, flight_area_vertices):
 			break
 		plt.clf()
