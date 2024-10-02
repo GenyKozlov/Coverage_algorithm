@@ -1,1 +1,2 @@
 # Coverage_algorithm
+Пример
