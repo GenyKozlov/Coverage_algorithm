@@ -175,7 +175,7 @@ def define_flight_area(initial_pose):
 
 class Params:
 	def __init__(self):
-		self.numiters = 1000
+		self.numiters = 100
 		self.animate = 1
 		self.dt = 0.1
 		self.goal_tol = 0.15
@@ -207,12 +207,12 @@ def main():
 	# Объект класса: передаются границы полигона и начальное положение
 	gridmap = GridMap(flight_area_vertices, state[:2])
 	# Передаются вершины препятствия
-	gridmap.add_obstacles_to_grid_map(obstacles)
+	gridmap.add_obstacles_to_grid_map(obstacles) # передача координат вершин препятствия
 
-	ox = flight_area_vertices[:,0].tolist() + [flight_area_vertices[0,0]]
-	oy = flight_area_vertices[:,1].tolist() + [flight_area_vertices[0,1]]
+	ox = flight_area_vertices[:,0].tolist() + [flight_area_vertices[0,0]] # срез по координатам "х" у вершин полигона + замыкание координатой начала
+	oy = flight_area_vertices[:,1].tolist() + [flight_area_vertices[0,1]] # срез по координатам "y" у вершин полигона + замыкание координатой начала
 	reso = params.sweep_resolution
-	goal_x, goal_y = planning(ox, oy, reso)
+	goal_x, goal_y = planning(ox, oy, reso) # передача среза координат х и у и разрешения
 
 	# goal = [x, y], m
 	goali = 0

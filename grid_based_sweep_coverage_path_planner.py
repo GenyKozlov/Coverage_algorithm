@@ -110,30 +110,33 @@ def find_sweep_direction_and_start_posi(ox, oy):
     vec = [0.0, 0.0]
     sweep_start_pos = [0.0, 0.0]
     for i in range(len(ox) - 1):
-        dx = ox[i + 1] - ox[i]
-        dy = oy[i + 1] - oy[i]
-        d = np.sqrt(dx ** 2 + dy ** 2)
+        dx = ox[i + 1] - ox[i] # смещение по координате х между соседними точками
+        dy = oy[i + 1] - oy[i] # смещение по координате у между соседними точками
+        d = np.sqrt(dx ** 2 + dy ** 2) # гипотенуза
 
-        if d > max_dist:
-            max_dist = d
-            vec = [dx, dy]
-            sweep_start_pos = [ox[i], oy[i]]
+        if d > max_dist: # поиск максимального расстояния между точками
+            max_dist = d # сохранение расстояния
+            vec = [dx, dy] # сохранение смещения
+            sweep_start_pos = [ox[i], oy[i]] # сохранение координат точки, которая является началом в данной паре
 
-    return vec, sweep_start_pos
+    return vec, sweep_start_pos # возвращает смещение и начальную точку из пары
 
 
 def convert_grid_coordinate(ox, oy, sweep_vec, sweep_start_posi):
-    tx = [ix - sweep_start_posi[0] for ix in ox]
-    ty = [iy - sweep_start_posi[1] for iy in oy]
+    tx = [ix - sweep_start_posi[0] for ix in ox] # из всех координат х в ох вычитают координату х точки начала развертки
+    ty = [iy - sweep_start_posi[1] for iy in oy] # из всех координат у в оу вычитают координату у точки начала развертки
 
-    th = math.atan2(sweep_vec[1], sweep_vec[0])
+    th = math.atan2(sweep_vec[1], sweep_vec[0]) # угол между прямой, начало которой является началом развертки, и осью х в радианах (от -pi до pi)
 
-    c = np.cos(-th)
-    s = np.sin(-th)
+    c = np.cos(-th) # расчет косинуса для угла в радианах
+    s = np.sin(-th) # расчет синуса для угла в радианах
 
-    rx = [ix * c - iy * s for (ix, iy) in zip(tx, ty)]
+    rx = [ix * c - iy * s for (ix, iy) in zip(tx, ty)] # zip временно рассматривает два списка как один, состоящий из списков координат всех точек
     ry = [ix * s + iy * c for (ix, iy) in zip(tx, ty)]
 
+    # данная функция создает новую систему координат, начало которой расположено в начале развертки, ось х направлена вдоль прямой с наибольшим расстоянием между
+    # двумя точками, начало которой в начале развертки (d), rx и ry - координаты всех точек полигона в новой системе координат
+    
     return rx, ry
 
 
@@ -235,9 +238,10 @@ def planning(ox, oy, reso,
              moving_direction=SweepSearcher.MovingDirection.RIGHT,
              sweeping_direction=SweepSearcher.SweepDirection.UP,
              ):
-    sweep_vec, sweep_start_posi = find_sweep_direction_and_start_posi(ox, oy)
+    sweep_vec, sweep_start_posi = find_sweep_direction_and_start_posi(ox, oy) # принимает срезы по координатам х и у вершин
 
-    rox, roy = convert_grid_coordinate(ox, oy, sweep_vec, sweep_start_posi)
+    rox, roy = convert_grid_coordinate(ox, oy, sweep_vec, sweep_start_posi) # принимает срезы по координатам, смещение и начальную точку из пары 
+    # (для которой наибольшее расстояние между точками)
 
     gmap, xinds_goaly, goaly = setup_grid_map(rox, roy, reso, sweeping_direction)
 

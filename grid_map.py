@@ -26,34 +26,31 @@ class GridMap:
         self.create_borders_grid_map(point_inside_polygon)
 
     def create_borders_grid_map(self, polygon_center):
-        WIDTH = int((self.map_width_m) / self.map_resolution_m)
-        LENGTH = int((self.map_length_m) / self.map_resolution_m)
+        WIDTH = int((self.map_width_m) / self.map_resolution_m) # количество строк в gmap
+        LENGTH = int((self.map_length_m) / self.map_resolution_m) # количество столбцов в gmap
         gmap = np.ones([WIDTH, LENGTH])
-        points = self.meters2grid(self.flight_area_vertices).tolist()
+        points = self.meters2grid(self.flight_area_vertices).tolist() # превращает массив в список, чтобы можно было добавить элементы
         points.append(points[0])
         for i in range(len(points)-1):
             line = bresenham(points[i], points[i+1])
-            for l in line:
-                gmap[l[1]][l[0]] = 0
-        polygon_center_grid = np.array( self.meters2grid(polygon_center), dtype=int )
-        gmap = flood_fill(polygon_center_grid, gmap)
+            for l in line: # для каждой точки по алгоритму Брезенхэма
+                gmap[l[1]][l[0]] = 0 # ноль на месте точки в матрице gmap
+        polygon_center_grid = np.array( self.meters2grid(polygon_center), dtype=int ) # передача в качестве аргумента начального положения БПЛА (начальной точки)
+        gmap = flood_fill(polygon_center_grid, gmap) # передача аргументами центра сетчатой карты (это сам БПЛА) и матрицы
         self.gmap = gmap
 
-    def add_obstacles_to_grid_map(self, obstacles):
+    def add_obstacles_to_grid_map(self, obstacles): # получает координаты вершин препятствия
         """ Obstacles dicretized map """
-        # rectangular obstacles
+        # rectangular obstacles, берется левый нижний и правый верхний вершины
         for obstacle in obstacles:
-            x1 = self.meters2grid(obstacle[0][1]); x2 = self.meters2grid(obstacle[2][1])
+            x1 = self.meters2grid(obstacle[0][1]); x2 = self.meters2grid(obstacle[2][1]) # перевод метрических координат в сеточные координаты
             y1 = self.meters2grid(obstacle[0][0]); y2 = self.meters2grid(obstacle[2][0])
             if x1 > x2: tmp = x2; x2 = x1; x1 = tmp
             if y1 > y2: tmp = y2; y2 = y1; y1 = tmp
-            self.gmap[x1:x2, y1:y2] = 1
+            self.gmap[x1:x2, y1:y2] = 1 # единицы в матрице на месте препятствия (по всему прямоугольнику, не только по границе)
         return self.gmap
 
-    def meters2grid(self, pose_m,):
-        # [0, 0](m) -> [100, 100]
-        # [1, 0](m) -> [100+100, 100]
-        # [0,-1](m) -> [100, 100-100]
+    def meters2grid(self, pose_m,): # выводит координаты точек в сетчатом пространстве, где начало координат лежит в левом нижнем углу
         nrows = int(self.map_width_m / self.map_resolution_m)
         ncols = int(self.map_length_m / self.map_resolution_m)
         if np.isscalar(pose_m):
@@ -61,8 +58,9 @@ class GridMap:
         else:
             pose_on_grid = np.array( np.array(pose_m)/self.map_resolution_m +\
                                      np.array([ncols/2, nrows/2]) -\
-                                     self.map_center/self.map_resolution_m, dtype=int )
+                                     self.map_center/self.map_resolution_m, dtype=int ) # точки целочисленные
         return pose_on_grid
+    
     def grid2meters(self, pose_grid):
         # [100, 100] -> [0, 0](m)
         # [100+100, 100] -> [1, 0](m)
@@ -104,7 +102,7 @@ def bresenham(start, end):
     dx = x2 - x1
     dy = y2 - y1
     is_steep = abs(dy) > abs(dx) # determine how steep the line is
-    if is_steep: # rotate line
+    if is_steep: # rotate line (симметрия относительно прямой +45 градусов)
         x1, y1 = y1, x1
         x2, y2 = y2, x2
     swapped = False # swap start and end points if necessary and store swap state
@@ -114,12 +112,14 @@ def bresenham(start, end):
         swapped = True
     dx = x2 - x1 # recalculate differentials
     dy = y2 - y1 # recalculate differentials
-    error = int(dx / 2.0) # calculate error
+    error = int(dx / 2.0) # calculate error - округление к меньшему целому числу
     ystep = 1 if y1 < y2 else -1
     # iterate over bounding box generating points between start and end
     y = y1
     points = []
+    # перебор всех х от х1 до х2 
     for x in range(x1, x2 + 1):
+        # возвращает координаты назад, если производили симметрию относительно прямой +45 градусов
         coord = [y, x] if is_steep else (x, y)
         points.append(coord)   
         error -= abs(dy)
@@ -129,21 +129,21 @@ def bresenham(start, end):
     if swapped: # reverse the list if the coordinates were swapped
         points.reverse()
     points = np.array(points)
-    return points
+    return points # возвращает массив точек по алгоритму Брезенхэма
 
 
 
-def flood_fill(cpoint, pmap):
+def flood_fill(cpoint, pmap): # передача аргументами центра сетчатой карты (это сам БПЛА) и матрицы
     """
     cpoint: starting point (x,y) of fill
     pmap: occupancy map generated from Bresenham ray-tracing
     """
-    # Fill empty areas with queue method
-    sx, sy = pmap.shape
-    fringe = deque()
-    fringe.appendleft(cpoint)
+    # Fill empty areas with queue method - заполнение 
+    sx, sy = pmap.shape # размерность матрицы: кол-во строк и столбцов
+    fringe = deque() # создание контейнера
+    fringe.appendleft(cpoint) # добавление центральной точки слева контейнера (в его начало)
     while fringe:
-        n = fringe.pop()
+        n = fringe.pop() # удаляется и записывается в n правый элемент контейнера (последний)
         nx, ny = n
         # West
         if nx > 0:
@@ -165,4 +165,4 @@ def flood_fill(cpoint, pmap):
             if pmap[nx, ny + 1] == 1.0:
                 pmap[nx, ny + 1] = 0.0
                 fringe.appendleft((nx, ny + 1))
-    return pmap
+    return pmap # нули в матрице будут на месте координат точек полигона, за пределами - единицы
