@@ -24,7 +24,7 @@ class SweepSearcher:
         RIGHT = 1
         LEFT = -1
 
-    def __init__(self, mdirection, sdirection, xinds_goaly, goaly):
+    def __init__(self, mdirection, sdirection, xinds_goaly, goaly): # moving direction = Right, sweeping_direction = Up
         self.moving_direction = mdirection
         self.sweep_direction = sdirection
         self.turing_window = []
@@ -76,7 +76,7 @@ class SweepSearcher:
         # all lower grid is occupied
         return True
 
-    def update_turning_window(self):
+    def update_turning_window(self): # moving direction = Right, sweeping_direction = Up
         self.turing_window = [
             (self.moving_direction, 0.0),
             (self.moving_direction, self.sweep_direction),
@@ -136,7 +136,8 @@ def convert_grid_coordinate(ox, oy, sweep_vec, sweep_start_posi):
 
     # данная функция создает новую систему координат, начало которой расположено в начале развертки, ось х направлена вдоль прямой с наибольшим расстоянием между
     # двумя точками, начало которой в начале развертки (d), rx и ry - координаты всех точек полигона в новой системе координат
-    
+    # цепь замкнута
+
     return rx, ry
 
 
@@ -159,7 +160,7 @@ def search_free_grid_index_at_edge_y(grid_map, from_upper=False):
     xinds = []
 
     if from_upper:
-        xrange = range(int(grid_map.height))[::-1]
+        xrange = range(int(grid_map.height))[::-1] # если направление развертки вверх, шаг среза = -1, элементы выбираются справа налево
         yrange = range(int(grid_map.width))[::-1]
     else:
         xrange = range(int(grid_map.height))
@@ -177,14 +178,17 @@ def search_free_grid_index_at_edge_y(grid_map, from_upper=False):
 
 
 def setup_grid_map(ox, oy, reso, sweep_direction, offset_grid=10):
-    width = math.ceil((max(ox) - min(ox)) / reso) + offset_grid
+    # передаются координаты вершин полигона в новой системе координат, разрешение и направление
+
+    # карта охватывает весь полигон, центр карты
+    width = math.ceil((max(ox) - min(ox)) / reso) + offset_grid # ceil округляет число в большую сторону: 5,3 - 6; -4,8 - -4
     height = math.ceil((max(oy) - min(oy)) / reso) + offset_grid
-    center_x = np.mean(ox)
+    center_x = np.mean(ox) # mean - рассчитывает среднее арифметическое значение элементов массива
     center_y = np.mean(oy)
 
-    grid_map = GridMap(width, height, reso, center_x, center_y)
+    grid_map = GridMap(width, height, reso, center_x, center_y) # принимает длину (по х), ширину (по у), разрешение и координаты центра
 
-    grid_map.set_value_from_polygon(ox, oy, 1.0, inside=False)
+    grid_map.set_value_from_polygon(ox, oy, 1.0, inside=False) # передаются координаты вершин полигона в новой системе координат
 
     grid_map.expand_grid()
 
@@ -194,7 +198,6 @@ def setup_grid_map(ox, oy, reso, sweep_direction, offset_grid=10):
         xinds_goaly, goaly = search_free_grid_index_at_edge_y(grid_map, from_upper=True)
     elif sweep_direction == SweepSearcher.SweepDirection.DOWN:
         xinds_goaly, goaly = search_free_grid_index_at_edge_y(grid_map, from_upper=False)
-
     return grid_map, xinds_goaly, goaly
 
 
@@ -231,7 +234,7 @@ def sweep_path_search(sweep_searcher, gmap, grid_search_animation=False):
             gmap.plot_grid_map(ax=ax)
             plt.pause(1.0)
 
-    return px, py
+    return px, py # возвращает координаты целевых точек в сеточной карте
 
 
 def planning(ox, oy, reso,
@@ -242,14 +245,17 @@ def planning(ox, oy, reso,
 
     rox, roy = convert_grid_coordinate(ox, oy, sweep_vec, sweep_start_posi) # принимает срезы по координатам, смещение и начальную точку из пары 
     # (для которой наибольшее расстояние между точками)
-
+    # rox и roy - координаты вершин полигона в новой системе координат, цепь замкнута
+    
     gmap, xinds_goaly, goaly = setup_grid_map(rox, roy, reso, sweeping_direction)
 
-    sweep_searcher = SweepSearcher(moving_direction, sweeping_direction, xinds_goaly, goaly)
+    sweep_searcher = SweepSearcher(moving_direction, sweeping_direction, xinds_goaly, goaly) 
 
     px, py = sweep_path_search(sweep_searcher, gmap)
+    # px и pу - это список координат х и у целевых точек в сеточной карте
 
     rx, ry = convert_global_coordinate(px, py, sweep_vec, sweep_start_posi)
+    # rx и ry - это список координат х и у целевых точек на глоабльной карте
 
     print("Path length:", len(rx))
 

@@ -213,13 +213,14 @@ def main():
 	oy = flight_area_vertices[:,1].tolist() + [flight_area_vertices[0,1]] # срез по координатам "y" у вершин полигона + замыкание координатой начала
 	reso = params.sweep_resolution
 	goal_x, goal_y = planning(ox, oy, reso) # передача среза координат х и у и разрешения
+	# goal_x, goal_y - координаты целевых точек на глобальной карте
 
 	# goal = [x, y], m
 	goali = 0
-	goal = [goal_x[goali], goal_y[goali]]
+	goal = [goal_x[goali], goal_y[goali]] # берут первую целевую точку (индекс 0)
 	t_prev_goal = time.time()
 
-	gridmap.draw_map(obstacles)
+	gridmap.draw_map(obstacles) # отрисовка препятствия
 
 	# while True:
 	for _ in range(params.numiters):

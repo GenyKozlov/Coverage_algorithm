@@ -15,12 +15,13 @@ class GridMap:
     GridMap class
     """
 
+    # принимает длину (по х), ширину (по у), разрешение и координаты центра (координаты в стандартной системе координта, не на сеточной)
     def __init__(self, width, height, resolution,
                  center_x, center_y, init_val=0.0):
         """__init__
 
         :param width: number of grid for width
-        :param height: number of grid for heigt
+        :param height: number of grid for height
         :param resolution: grid resolution [m]
         :param center_x: center x position  [m]
         :param center_y: center y position [m]
@@ -32,15 +33,15 @@ class GridMap:
         self.center_x = center_x
         self.center_y = center_y
 
+        # координаты левого нижнего угла новой карты, начало которой в начале свертки
         self.left_lower_x = self.center_x - \
                             (self.width / 2.0) * self.resolution
         self.left_lower_y = self.center_y - \
                             (self.height / 2.0) * self.resolution
-
         self.ndata = self.width * self.height
         self.data = [init_val] * int(self.ndata)
 
-    def get_value_from_xy_index(self, x_ind, y_ind):
+    def get_value_from_xy_index(self, x_ind, y_ind): # передаются координаты (индексы) сеточной карты от точки (0,0)
         """get_value_from_xy_index
 
         when the index is out of grid map area, return None
@@ -49,7 +50,7 @@ class GridMap:
         :param y_ind: y index
         """
 
-        grid_ind = self.calc_grid_index_from_xy_index(x_ind, y_ind)
+        grid_ind = self.calc_grid_index_from_xy_index(x_ind, y_ind) # передаются координаты (индексы) сеточной карты от точки (0,0)
 
         if 0 <= grid_ind <= self.ndata:
             return self.data[grid_ind]
@@ -88,7 +89,7 @@ class GridMap:
 
         return flag
 
-    def set_value_from_xy_index(self, x_ind, y_ind, val):
+    def set_value_from_xy_index(self, x_ind, y_ind, val): # передаются координаты точек сетки от точки (0,0)
         """set_value_from_xy_index
 
         return bool flag, which means setting value is succeeded or not
@@ -121,7 +122,7 @@ class GridMap:
         :param inside: setting data inside or outside
         """
 
-        # making ring polygon
+        # making ring polygon - проверка на замкнутость цепи
         if (pol_x[0] != pol_x[-1]) or (pol_y[0] != pol_y[-1]):
             pol_x.append(pol_x[0])
             pol_y.append(pol_y[0])
@@ -130,26 +131,26 @@ class GridMap:
         for x_ind in range(int(self.width)):
             for y_ind in range(int(self.height)):
                 x_pos, y_pos = self.calc_grid_central_xy_position_from_xy_index(
-                    x_ind, y_ind)
+                    x_ind, y_ind) # передаются координаты точек сетки от точки (0,0)
 
-                flag = self.check_inside_polygon(x_pos, y_pos, pol_x, pol_y)
+                flag = self.check_inside_polygon(x_pos, y_pos, pol_x, pol_y) # передаются координаты ..... и вершин полигона в новой системе координат
 
                 if flag is inside:
-                    self.set_value_from_xy_index(x_ind, y_ind, val)
+                    self.set_value_from_xy_index(x_ind, y_ind, val) # передаются координаты точек сетки от точки (0,0)
 
     def calc_grid_index_from_xy_index(self, x_ind, y_ind):
         grid_ind = int(y_ind * self.width + x_ind)
         return grid_ind
 
-    def calc_grid_central_xy_position_from_xy_index(self, x_ind, y_ind):
+    def calc_grid_central_xy_position_from_xy_index(self, x_ind, y_ind): # передаются координаты точек сетки от точки (0,0)
         x_pos = self.calc_grid_central_xy_position_from_index(
-            x_ind, self.left_lower_x)
+            x_ind, self.left_lower_x) # передаются координата х точки сетки и наименьшая координата "х" сетки
         y_pos = self.calc_grid_central_xy_position_from_index(
-            y_ind, self.left_lower_y)
+            y_ind, self.left_lower_y) # передаются координата у точки сетки и наименьшая координата "у" сетки
 
         return x_pos, y_pos
 
-    def calc_grid_central_xy_position_from_index(self, index, lower_pos):
+    def calc_grid_central_xy_position_from_index(self, index, lower_pos): # передаются координата х или у точки сетки и наименьшая координата "х" или "y" сетки
         return lower_pos + index * self.resolution + self.resolution / 2.0
 
     def calc_xy_index_from_position(self, pos, lower_pos, max_index):
@@ -159,9 +160,9 @@ class GridMap:
         else:
             return None
 
-    def check_occupied_from_xy_index(self, xind, yind, occupied_val=1.0):
+    def check_occupied_from_xy_index(self, xind, yind, occupied_val=1.0): # передаются координаты (индексы) сеточной карты от точки (0,0)
 
-        val = self.get_value_from_xy_index(xind, yind)
+        val = self.get_value_from_xy_index(xind, yind) # передаются координаты (индексы) сеточной карты от точки (0,0)
 
         if val >= occupied_val:
             return True
@@ -173,7 +174,7 @@ class GridMap:
 
         for ix in range(int(self.width)):
             for iy in range(int(self.height)):
-                if self.check_occupied_from_xy_index(ix, iy):
+                if self.check_occupied_from_xy_index(ix, iy): # передаются координаты (индексы) сеточной карты от точки (0,0)
                     xinds.append(ix)
                     yinds.append(iy)
 
@@ -186,7 +187,7 @@ class GridMap:
             self.set_value_from_xy_index(ix - 1, iy - 1, val=1.0)
 
     @staticmethod
-    def check_inside_polygon(iox, ioy, x, y):
+    def check_inside_polygon(iox, ioy, x, y): # передаются координаты ..... и вершин полигона в новой системе координат
 
         npoint = len(x) - 1
         inside = False

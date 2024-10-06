@@ -74,7 +74,7 @@ class GridMap:
                             self.map_resolution_m - self.map_center
         return pose_meters
 
-    def draw_map(self, obstacles):
+    def draw_map(self, obstacles): # отрисовка карты
         ax = plt.gca()
         w = self.map_width_m; l = self.map_length_m
         ax.set_xlim([-w/2, w/2])
