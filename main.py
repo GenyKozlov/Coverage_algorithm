@@ -114,20 +114,24 @@ def motion(state, goal, params):  # передаются все начальны
 	# state = [x(m), y(m), yaw(rad), v(m/s), omega(rad/s)]
 	dx = goal[0] - state[0] # смещение по х между текущим положением и целевой точкой
 	dy = goal[1] - state[1] # смещение по у между текущим положением и целевой точкой
-	goal_yaw = math.atan2(dy, dx) # угол от -pi до pi 
-	K_theta = 3
-	state[4] = K_theta*math.sin(goal_yaw - state[2]) # omega(rad/s), под синусом: угол между направлениями рыскания
-	state[2] += params.dt*state[4] # yaw(rad)
+
+	# goal_yaw = math.atan2(dy, dx) # угол от -pi до pi 
+	# K_theta = 3
+	# state[4] = K_theta*math.sin(goal_yaw - state[2]) # omega(rad/s), под синусом: угол между направлениями рыскания
+	# state[2] += params.dt*state[4] # yaw(rad)
 
 	dist_to_goal = np.linalg.norm(goal - state[:2]) # евклидово расстояние между текущим положением и целевой точкой
-	K_v = 0.1
+	K_v = 0.5
 	state[3] += K_v*dist_to_goal
 	if state[3] >= params.max_vel: state[3] = params.max_vel
 	if state[3] <= params.min_vel: state[3] = params.min_vel
 
 	dv = params.dt*state[3]
-	state[0] += dv*np.cos(state[2]) # x(m)
-	state[1] += dv*np.sin(state[2]) # y(m)
+	state[0] += dv*dx # x(m)
+	state[1] += dv*dy # y(m)
+
+	# state[0] += dv*np.cos(state[2]) # x(m)
+	# state[1] += dv*np.sin(state[2]) # y(m)
 
 	return state # возвращает новые параметры БПЛА
 
@@ -230,7 +234,7 @@ def main():
 		state = motion(state, goal, params) # передаются все начальные параметры, первая целевая точка и параметры
 		# возвращает новые параметры БПЛА
 
-		state = collision_avoidance(state, gridmap, params) # принимает параметры БПЛА, сеточную карту и параметры
+		# state = collision_avoidance(state, gridmap, params) # принимает параметры БПЛА, сеточную карту и параметры
 		# возвращает новые параметры БПЛА
 
 		goal_dist = np.linalg.norm(goal - state[:2])
