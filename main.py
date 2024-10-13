@@ -78,7 +78,6 @@ def obstacle_check(pose, gridmap, params): # передаются координ
 	return obstacle
 
 
-
 def left_shift(pose, r):
 	left = [pose[0]+r*np.cos(pose[2]+np.pi/2), pose[1]+r*np.sin(pose[2]+np.pi/2)]
 	return left
@@ -108,7 +107,6 @@ def visualize(traj, pose, params):
 	plt.plot(traj[:,0], traj[:,1], 'g')
 	plot_robot(pose, params)
 	plt.legend()
-		
 
 def motion(state, goal, params):  # передаются все начальные параметры, первая целевая точка и параметры
 	# state = [x(m), y(m), yaw(rad), v(m/s), omega(rad/s)]
@@ -121,7 +119,7 @@ def motion(state, goal, params):  # передаются все начальны
 	# state[2] += params.dt*state[4] # yaw(rad)
 
 	dist_to_goal = np.linalg.norm(goal - state[:2]) # евклидово расстояние между текущим положением и целевой точкой
-	K_v = 0.5
+	K_v = 1.5
 	state[3] += K_v*dist_to_goal
 	if state[3] >= params.max_vel: state[3] = params.max_vel
 	if state[3] <= params.min_vel: state[3] = params.min_vel
