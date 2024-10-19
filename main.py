@@ -108,28 +108,42 @@ def visualize(traj, pose, params):
 	plot_robot(pose, params)
 	plt.legend()
 
+def rotate(state, goal):
+	dx = goal[0] - state[0] # смещение по х между текущим положением и целевой точкой
+	dy = goal[1] - state[1] # смещение по у между текущим положением и целевой точкой
+	goal_yaw = math.atan2(dy, dx) # угол от -pi до pi
+	while (state[2] != math.pi):
+		state[2] += 0.5 # yaw(rad)
+	return state
+	
 def motion(state, goal, params):  # передаются все начальные параметры, первая целевая точка и параметры
 	# state = [x(m), y(m), yaw(rad), v(m/s), omega(rad/s)]
 	dx = goal[0] - state[0] # смещение по х между текущим положением и целевой точкой
 	dy = goal[1] - state[1] # смещение по у между текущим положением и целевой точкой
 
-	# goal_yaw = math.atan2(dy, dx) # угол от -pi до pi 
+	goal_yaw = math.atan2(dy, dx) # угол от -pi до pi 
 	# K_theta = 3
 	# state[4] = K_theta*math.sin(goal_yaw - state[2]) # omega(rad/s), под синусом: угол между направлениями рыскания
 	# state[2] += params.dt*state[4] # yaw(rad)
 
+	a = abs(state[2]) - abs(goal_yaw)
+	b = abs(a)
+	print(b)
+	if (b>0.5):
+		state[2] += 0.05
+
 	dist_to_goal = np.linalg.norm(goal - state[:2]) # евклидово расстояние между текущим положением и целевой точкой
-	K_v = 1.5
+	K_v = 0
 	state[3] += K_v*dist_to_goal
 	if state[3] >= params.max_vel: state[3] = params.max_vel
 	if state[3] <= params.min_vel: state[3] = params.min_vel
 
 	dv = params.dt*state[3]
-	state[0] += dv*dx # x(m)
-	state[1] += dv*dy # y(m)
+	# state[0] += dv*dx # x(m)
+	# state[1] += dv*dy # y(m)
 
-	# state[0] += dv*np.cos(state[2]) # x(m)
-	# state[1] += dv*np.sin(state[2]) # y(m)
+	state[0] += dv*np.cos(state[2]) # x(m)
+	state[1] += dv*np.sin(state[2]) # y(m)
 
 	return state # возвращает новые параметры БПЛА
 
@@ -247,7 +261,6 @@ def main():
 		    	break
 		    t_prev_goal = time.time()
 		    goal = [goal_x[goali], goal_y[goali]]
-
 
 		traj = np.vstack([traj, state[:2]])
 		
