@@ -46,33 +46,33 @@ def obstacle_check(pose, gridmap, params): # передаются координ
 		'right': 0,
 		'left':  0,
 	}
-
+	print(obstacle)
 	for i in np.arange(min(pi[0], fronti[0]), max(pi[0], fronti[0])+1): # np.arrange(x,y,t) - массив от х до у (не включительно) с шагом t
 		for j in np.arange(min(pi[1], fronti[1]), max(pi[1], fronti[1])+1): # перебор координат между точкой на краю окружности с радиусом датчика и положением БПЛА
 			m = min(j, gmap.shape[0]-1); n = min(i, gmap.shape[1]-1) # shape - размерность матрицы: кол-во строк и столбцов
 			if gmap[m,n]: # если в данной ячейке карты стоит "1" (есть препятствие)
-				print('FRONT collision')
+				# print('FRONT collision')
 				obstacle['front'] = 1
 
 	for i in np.arange(min(pi[0], backi[0]), max(pi[0], backi[0])+1):
 		for j in np.arange(min(pi[1], backi[1]), max(pi[1], backi[1])+1):
 			m = min(j, gmap.shape[0]-1); n = min(i, gmap.shape[1]-1)
 			if gmap[m,n]: 
-				print('BACK collision')
+				# print('BACK collision')
 				obstacle['back'] = 1
 
 	for i in np.arange(min(pi[0], lefti[0]), max(pi[0], lefti[0])+1):
 		for j in np.arange(min(pi[1], lefti[1]), max(pi[1], lefti[1])+1):
 			m = min(j, gmap.shape[0]-1); n = min(i, gmap.shape[1]-1)
 			if gmap[m,n]:
-				print('LEFT collision')
+				# print('LEFT collision')
 				obstacle['left'] = 1
 
 	for i in np.arange(min(pi[0], righti[0]), max(pi[0], righti[0])+1):
 		for j in np.arange(min(pi[1], righti[1]), max(pi[1], righti[1])+1):
 			m = min(j, gmap.shape[0]-1); n = min(i, gmap.shape[1]-1)
 			if gmap[m,n]:
-				print('RIGHT collision')
+				# print('RIGHT collision')
 				obstacle['right'] = 1
 
 	return obstacle
@@ -107,44 +107,65 @@ def visualize(traj, pose, params):
 	plt.plot(traj[:,0], traj[:,1], 'g')
 	plot_robot(pose, params)
 	plt.legend()
-
-def rotate(state, goal):
-	dx = goal[0] - state[0] # смещение по х между текущим положением и целевой точкой
-	dy = goal[1] - state[1] # смещение по у между текущим положением и целевой точкой
-	goal_yaw = math.atan2(dy, dx) # угол от -pi до pi
-	while (state[2] != math.pi):
-		state[2] += 0.5 # yaw(rad)
-	return state
 	
-def motion(state, goal, params):  # передаются все начальные параметры, первая целевая точка и параметры
+def motion(state, goal, params, gridmap):  # передаются все начальные параметры, первая целевая точка и параметры
 	# state = [x(m), y(m), yaw(rad), v(m/s), omega(rad/s)]
-	dx = goal[0] - state[0] # смещение по х между текущим положением и целевой точкой
-	dy = goal[1] - state[1] # смещение по у между текущим положением и целевой точкой
-
+	dx = goal[0] - state[0]
+	dy = goal[1] - state[1]
 	goal_yaw = math.atan2(dy, dx) # угол от -pi до pi 
 	K_theta = 3
-	a = math.sin(goal_yaw - state[2])
-	if (abs(a) > 0.01):
-		state[3] = 0
-		state[4] = K_theta*a # omega(rad/s), под синусом: угол между направлениями рыскания
-		state[2] += params.dt*state[4] # yaw(rad)
-
-	print(a)
+	sinus = math.sin(goal_yaw - state[2]) # под синусом: угол между направлениями рыскания
+	state[4] = K_theta*sinus # omega(rad/s)
+	state[2] += params.dt*state[4] # yaw(rad)
 
 	dist_to_goal = np.linalg.norm(goal - state[:2]) # евклидово расстояние между текущим положением и целевой точкой
-	K_v = 1.5
-	state[3] += K_v*dist_to_goal
-	if state[3] >= params.max_vel: state[3] = params.max_vel
-	# if state[3] <= params.min_vel: state[3] = params.min_vel
+	K_v = 0.1
+
+	pose_grid = gridmap.meters2grid(state[:2]) # координаты положения БПЛА на сеточной карте
+	boundary = obstacle_check([pose_grid[0], pose_grid[1], state[2]], gridmap.gmap, params)
+
+	if (abs(sinus) > 0.1 and not(boundary['right'] or boundary['front'] or boundary['left'])):
+		state[3] = 0
+	else:
+		state[3] += K_v*dist_to_goal
+		if state[3] >= params.max_vel: state[3] = params.max_vel
+		if state[3] <= params.min_vel: state[3] = params.min_vel
 
 	dv = params.dt*state[3]
-	# state[0] += dv*dx # x(m)
-	# state[1] += dv*dy # y(m)
-
 	state[0] += dv*np.cos(state[2]) # x(m)
 	state[1] += dv*np.sin(state[2]) # y(m)
 
-	return state # возвращает новые параметры БПЛА
+	return state
+
+def motion1(state, goal, params, gridmap):  # передаются все начальные параметры, первая целевая точка и параметры
+	# state = [x(m), y(m), yaw(rad), v(m/s), omega(rad/s)]
+	dx = goal[0] - state[0]
+	dy = goal[1] - state[1]
+
+	if ((A[0][0] != goal[0]) or (A[0][1] != goal[1])):
+		B = A[0]
+		A[1] = B
+		A[0] = goal
+		print(A)
+
+	goal_yaw = math.atan2(dy, dx) # угол от -pi до pi 
+	K_theta = 3
+	sinus = math.sin(goal_yaw - state[2]) # под синусом: угол между направлениями рыскания
+	state[4] = K_theta*sinus # omega(rad/s)
+	state[2] += params.dt*state[4] # yaw(rad)
+
+	dist_to_goal = np.linalg.norm(goal - state[:2]) # евклидово расстояние между текущим положением и целевой точкой
+	K_v = 0.1
+
+	state[3] += K_v*dist_to_goal
+	if state[3] >= params.max_vel: state[3] = params.max_vel
+	if state[3] <= params.min_vel: state[3] = params.min_vel
+
+	dv = params.dt*state[3]
+	state[0] += dv*np.cos(state[2]) # x(m)
+	state[1] += dv*np.sin(state[2]) # y(m)
+
+	return state
 
 def collision_avoidance(state, gridmap, params): # принимает положение БПЛА, передается сеточная карта и параметры
 
@@ -193,7 +214,7 @@ def define_flight_area(initial_pose):
 
 class Params:
 	def __init__(self):
-		self.numiters = 100
+		self.numiters = 500
 		self.animate = 1
 		self.dt = 0.1
 		self.goal_tol = 0.15
@@ -238,14 +259,17 @@ def main():
 	goal = [goal_x[goali], goal_y[goali]] # берут первую целевую точку (индекс 0)
 	t_prev_goal = time.time()
 
+	global A
+	A = [goal, 0]
+	print(A)
 	gridmap.draw_map(obstacles) # отрисовка препятствия
 
 	# while True:
 	for _ in range(params.numiters):
-		state = motion(state, goal, params) # передаются все начальные параметры, первая целевая точка и параметры
+		state = motion(state, goal, params, gridmap) # передаются все начальные параметры, первая целевая точка и параметры
 		# возвращает новые параметры БПЛА
 
-		# state = collision_avoidance(state, gridmap, params) # принимает параметры БПЛА, сеточную карту и параметры
+		state = collision_avoidance(state, gridmap, params) # принимает параметры БПЛА, сеточную карту и параметры
 		# возвращает новые параметры БПЛА
 
 		goal_dist = np.linalg.norm(goal - state[:2])
