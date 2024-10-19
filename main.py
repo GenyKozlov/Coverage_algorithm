@@ -122,21 +122,20 @@ def motion(state, goal, params):  # передаются все начальны
 	dy = goal[1] - state[1] # смещение по у между текущим положением и целевой точкой
 
 	goal_yaw = math.atan2(dy, dx) # угол от -pi до pi 
-	# K_theta = 3
-	# state[4] = K_theta*math.sin(goal_yaw - state[2]) # omega(rad/s), под синусом: угол между направлениями рыскания
-	# state[2] += params.dt*state[4] # yaw(rad)
+	K_theta = 3
+	a = math.sin(goal_yaw - state[2])
+	if (abs(a) > 0.01):
+		state[3] = 0
+		state[4] = K_theta*a # omega(rad/s), под синусом: угол между направлениями рыскания
+		state[2] += params.dt*state[4] # yaw(rad)
 
-	a = abs(state[2]) - abs(goal_yaw)
-	b = abs(a)
-	print(b)
-	if (b>0.5):
-		state[2] += 0.05
+	print(a)
 
 	dist_to_goal = np.linalg.norm(goal - state[:2]) # евклидово расстояние между текущим положением и целевой точкой
-	K_v = 0
+	K_v = 1.5
 	state[3] += K_v*dist_to_goal
 	if state[3] >= params.max_vel: state[3] = params.max_vel
-	if state[3] <= params.min_vel: state[3] = params.min_vel
+	# if state[3] <= params.min_vel: state[3] = params.min_vel
 
 	dv = params.dt*state[3]
 	# state[0] += dv*dx # x(m)
