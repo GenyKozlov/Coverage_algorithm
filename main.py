@@ -92,6 +92,8 @@ def forward_shift(pose, r):
 	forward = pose
 	forward[:2] = [pose[0]+r*np.cos(pose[2]), pose[1]+r*np.sin(pose[2])]
 	return forward
+
+
 def turn_left(pose, yaw=np.pi/2*np.random.uniform(0.2, 0.6)):
 	pose[2] -= yaw
 	return pose
