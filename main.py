@@ -89,18 +89,39 @@ def turn_right1(pose, yaw=np.pi/2*np.random.uniform(0.2, 0.6)):
 	return pose
 
 def turn_left(pose, yaw=np.pi/2*np.random.uniform(0.2, 0.6)):
-	pose[2] -= yaw
+	pose[0] -= 0.1*yaw
 	return pose
 def turn_right(pose, yaw=np.pi/2*np.random.uniform(0.2, 0.6)):
-	pose[2] += yaw
+	pose[0] += 0.1*yaw
 	return pose
 
 def visualize(traj, pose, params):
 	plt.plot(traj[:,0], traj[:,1], 'g')
 	plot_robot(pose, params)
 	plt.legend()
-	
-def motion1(state, goal, params, gridmap):  # передаются все начальные параметры, первая целевая точка и параметры
+
+def motion3(state, goal, params, gridmap):  # стандартная функция
+	# state = [x(m), y(m), yaw(rad), v(m/s), omega(rad/s)]
+	dx = goal[0] - state[0] # смещение по х между текущим положением и целевой точкой
+	dy = goal[1] - state[1] # смещение по у между текущим положением и целевой точкой
+	goal_yaw = math.atan2(dy, dx) # угол от -pi до pi 
+	K_theta = 3
+	state[4] = K_theta*math.sin(goal_yaw - state[2]) # omega(rad/s), под синусом: угол между направлениями рыскания
+	state[2] += params.dt*state[4] # yaw(rad)
+
+	dist_to_goal = np.linalg.norm(goal - state[:2]) # евклидово расстояние между текущим положением и целевой точкой
+	K_v = 0.1
+	state[3] += K_v*dist_to_goal
+	if state[3] >= params.max_vel: state[3] = params.max_vel
+	if state[3] <= params.min_vel: state[3] = params.min_vel
+
+	dv = params.dt*state[3]
+	state[0] += dv*np.cos(state[2]) # x(m)
+	state[1] += dv*np.sin(state[2]) # y(m)
+
+	return state # возвращает новые параметры БПЛА
+
+def motion1(state, goal, params, gridmap):  # контролируется разность между текущим и желаемым углами рыскания
 	# state = [x(m), y(m), yaw(rad), v(m/s), omega(rad/s)]
 	dx = goal[0] - state[0]
 	dy = goal[1] - state[1]
@@ -130,7 +151,7 @@ def motion1(state, goal, params, gridmap):  # передаются все нач
 	return state
 
 C=[0,0]
-def motion2(state, goal, params, gridmap):  # передаются все начальные параметры, первая целевая точка и параметры
+def motion2(state, goal, params, gridmap):  # движение с контролем пары целевых точек
 	# state = [x(m), y(m), yaw(rad), v(m/s), omega(rad/s)]
 	dx = goal[0] - state[0]
 	dy = goal[1] - state[1]
@@ -171,7 +192,7 @@ def motion2(state, goal, params, gridmap):  # передаются все нач
 
 	return state
 
-def motion(state, goal, params, gridmap):  # передаются все начальные параметры, первая целевая точка и параметры
+def motion(state, goal, params, gridmap):  # 
 	# state = [x(m), y(m), yaw(rad), v(m/s), omega(rad/s)]
 	dx = goal[0] - state[0] # смещение по х между текущим положением и целевой точкой
 	dy = goal[1] - state[1] # смещение по у между текущим положением и целевой точкой
@@ -187,8 +208,8 @@ def motion(state, goal, params, gridmap):  # передаются все нач�
 	if state[3] <= params.min_vel: state[3] = params.min_vel
 
 	dv = params.dt*state[3]
-	state[0] += dv*np.cos(goal_yaw) # x(m)
-	state[1] += dv*np.cos(goal_yaw) # y(m)
+	state[0] += dv*dx # x(m)
+	state[1] += dv*dy # y(m)
 
 	return state # возвращает новые параметры БПЛА
 
@@ -243,8 +264,8 @@ class Params:
 		self.animate = 1
 		self.dt = 0.1
 		self.goal_tol = 0.15
-		self.max_vel = 0.5 # m/s
-		self.min_vel = 0.3 # m/s
+		self.max_vel = 0.7 # m/s
+		self.min_vel = 0.5 # m/s
 		self.sensor_range_m = 0.3 # m
 		self.time_to_switch_goal = 5.0 # sec
 		self.sweep_resolution = 0.25 # m
