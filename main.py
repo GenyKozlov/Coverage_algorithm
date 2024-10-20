@@ -46,7 +46,7 @@ def obstacle_check(pose, gridmap, params): # передаются координ
 		'right': 0,
 		'left':  0,
 	}
-	print(obstacle)
+
 	for i in np.arange(min(pi[0], fronti[0]), max(pi[0], fronti[0])+1): # np.arrange(x,y,t) - массив от х до у (не включительно) с шагом t
 		for j in np.arange(min(pi[1], fronti[1]), max(pi[1], fronti[1])+1): # перебор координат между точкой на краю окружности с радиусом датчика и положением БПЛА
 			m = min(j, gmap.shape[0]-1); n = min(i, gmap.shape[1]-1) # shape - размерность матрицы: кол-во строк и столбцов
@@ -74,7 +74,7 @@ def obstacle_check(pose, gridmap, params): # передаются координ
 			if gmap[m,n]:
 				# print('RIGHT collision')
 				obstacle['right'] = 1
-
+	
 	return obstacle
 
 
@@ -108,7 +108,7 @@ def visualize(traj, pose, params):
 	plot_robot(pose, params)
 	plt.legend()
 	
-def motion(state, goal, params, gridmap):  # передаются все начальные параметры, первая целевая точка и параметры
+def motion1(state, goal, params, gridmap):  # передаются все начальные параметры, первая целевая точка и параметры
 	# state = [x(m), y(m), yaw(rad), v(m/s), omega(rad/s)]
 	dx = goal[0] - state[0]
 	dy = goal[1] - state[1]
@@ -137,7 +137,8 @@ def motion(state, goal, params, gridmap):  # передаются все нач�
 
 	return state
 
-def motion1(state, goal, params, gridmap):  # передаются все начальные параметры, первая целевая точка и параметры
+C=[0,0]
+def motion(state, goal, params, gridmap):  # передаются все начальные параметры, первая целевая точка и параметры
 	# state = [x(m), y(m), yaw(rad), v(m/s), omega(rad/s)]
 	dx = goal[0] - state[0]
 	dy = goal[1] - state[1]
@@ -146,20 +147,31 @@ def motion1(state, goal, params, gridmap):  # передаются все нач
 		B = A[0]
 		A[1] = B
 		A[0] = goal
-		print(A)
+
+		dx1 = A[0][0] - A[1][0]
+		dy1 = A[0][1] - A[1][1]
+		goal_yaw1 = math.atan2(dy1, dx1)
+
+		D = C[0]
+		C[1] = D
+		C[0] = goal_yaw1
+	
+	delta = C[0]-C[1]
 
 	goal_yaw = math.atan2(dy, dx) # угол от -pi до pi 
 	K_theta = 3
-	sinus = math.sin(goal_yaw - state[2]) # под синусом: угол между направлениями рыскания
-	state[4] = K_theta*sinus # omega(rad/s)
+	state[4] = K_theta*math.sin(goal_yaw - state[2]) # omega(rad/s), под синусом: угол между направлениями рыскания
 	state[2] += params.dt*state[4] # yaw(rad)
 
 	dist_to_goal = np.linalg.norm(goal - state[:2]) # евклидово расстояние между текущим положением и целевой точкой
-	K_v = 0.1
+	K_v = 0.01
 
-	state[3] += K_v*dist_to_goal
-	if state[3] >= params.max_vel: state[3] = params.max_vel
-	if state[3] <= params.min_vel: state[3] = params.min_vel
+	if (abs(delta)>0.1):
+		state[3] = 0
+	else:
+		state[3] += K_v*dist_to_goal
+		if state[3] >= params.max_vel: state[3] = params.max_vel
+		if state[3] <= params.min_vel: state[3] = params.min_vel
 
 	dv = params.dt*state[3]
 	state[0] += dv*np.cos(state[2]) # x(m)
@@ -214,7 +226,7 @@ def define_flight_area(initial_pose):
 
 class Params:
 	def __init__(self):
-		self.numiters = 500
+		self.numiters = 1000
 		self.animate = 1
 		self.dt = 0.1
 		self.goal_tol = 0.15
@@ -260,7 +272,7 @@ def main():
 	t_prev_goal = time.time()
 
 	global A
-	A = [goal, 0]
+	A = [goal, goal]
 	print(A)
 	gridmap.draw_map(obstacles) # отрисовка препятствия
 
