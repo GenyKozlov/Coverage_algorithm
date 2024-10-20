@@ -167,7 +167,7 @@ def motion(state, goal, params, gridmap):  # передаются все нач�
 	K_v = 0.01
 
 	if (abs(delta)>0.1):
-		state[3] = 0
+		state[3] = params.min_vel
 	else:
 		state[3] += K_v*dist_to_goal
 		if state[3] >= params.max_vel: state[3] = params.max_vel
