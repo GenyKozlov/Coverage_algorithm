@@ -77,22 +77,16 @@ def obstacle_check(pose, gridmap, params): # передаются координ
 	
 	return obstacle
 
-
-def left_shift(pose, r):
-	left = [pose[0]+r*np.cos(pose[2]+np.pi/2), pose[1]+r*np.sin(pose[2]+np.pi/2)]
-	return left
-def right_shift(pose, r):
-	right = [pose[0]-r*np.cos(pose[2]+np.pi/2), pose[1]-r*np.sin(pose[2]+np.pi/2)]
-	return right
-def back_shift(pose, r):
-	back = pose
-	back[:2] = [pose[0]-r*np.cos(pose[2]), pose[1]-r*np.sin(pose[2])]
-	return back
-def forward_shift(pose, r):
-	forward = pose
-	forward[:2] = [pose[0]+r*np.cos(pose[2]), pose[1]+r*np.sin(pose[2])]
-	return forward
-
+def slow_down(state, params, dv=0.1):
+	if state[3]>params.min_vel:
+		state[3] -= dv
+	return state
+def turn_left1(pose, yaw=np.pi/2*np.random.uniform(0.2, 0.6)):
+	pose[2] -= yaw
+	return pose
+def turn_right1(pose, yaw=np.pi/2*np.random.uniform(0.2, 0.6)):
+	pose[2] += yaw
+	return pose
 
 def turn_left(pose, yaw=np.pi/2*np.random.uniform(0.2, 0.6)):
 	pose[2] -= yaw
@@ -100,10 +94,6 @@ def turn_left(pose, yaw=np.pi/2*np.random.uniform(0.2, 0.6)):
 def turn_right(pose, yaw=np.pi/2*np.random.uniform(0.2, 0.6)):
 	pose[2] += yaw
 	return pose
-def slow_down(state, params, dv=0.1):
-	if state[3]>params.min_vel:
-		state[3] -= dv
-	return state
 
 def visualize(traj, pose, params):
 	plt.plot(traj[:,0], traj[:,1], 'g')
@@ -140,7 +130,7 @@ def motion1(state, goal, params, gridmap):  # передаются все нач
 	return state
 
 C=[0,0]
-def motion(state, goal, params, gridmap):  # передаются все начальные параметры, первая целевая точка и параметры
+def motion2(state, goal, params, gridmap):  # передаются все начальные параметры, первая целевая точка и параметры
 	# state = [x(m), y(m), yaw(rad), v(m/s), omega(rad/s)]
 	dx = goal[0] - state[0]
 	dy = goal[1] - state[1]
@@ -180,6 +170,27 @@ def motion(state, goal, params, gridmap):  # передаются все нач�
 	state[1] += dv*np.sin(state[2]) # y(m)
 
 	return state
+
+def motion(state, goal, params, gridmap):  # передаются все начальные параметры, первая целевая точка и параметры
+	# state = [x(m), y(m), yaw(rad), v(m/s), omega(rad/s)]
+	dx = goal[0] - state[0] # смещение по х между текущим положением и целевой точкой
+	dy = goal[1] - state[1] # смещение по у между текущим положением и целевой точкой
+	goal_yaw = math.atan2(dy, dx) # угол от -pi до pi 
+	K_theta = 3
+	state[4] = K_theta*math.sin(goal_yaw - state[2]) # omega(rad/s), под синусом: угол между направлениями рыскания
+	# state[2] += params.dt*state[4] # yaw(rad)
+
+	dist_to_goal = np.linalg.norm(goal - state[:2]) # евклидово расстояние между текущим положением и целевой точкой
+	K_v = 0.1
+	state[3] += K_v*dist_to_goal
+	if state[3] >= params.max_vel: state[3] = params.max_vel
+	if state[3] <= params.min_vel: state[3] = params.min_vel
+
+	dv = params.dt*state[3]
+	state[0] += dv*np.cos(goal_yaw) # x(m)
+	state[1] += dv*np.cos(goal_yaw) # y(m)
+
+	return state # возвращает новые параметры БПЛА
 
 def collision_avoidance(state, gridmap, params): # принимает положение БПЛА, передается сеточная карта и параметры
 
@@ -233,7 +244,7 @@ class Params:
 		self.dt = 0.1
 		self.goal_tol = 0.15
 		self.max_vel = 0.5 # m/s
-		self.min_vel = 0.1 # m/s
+		self.min_vel = 0.3 # m/s
 		self.sensor_range_m = 0.3 # m
 		self.time_to_switch_goal = 5.0 # sec
 		self.sweep_resolution = 0.25 # m
